@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+#
+# chkconfig: 35 99 0
+# description: Starts and Stops the WatchMySQL Daemon
+
+if [ -f /etc/init.d/functions ]; then
+	. /etc/init.d/functions
+else
+	echo "Count not find functions file"
+	exit 1
+fi
+
+if [ ! -f /usr/sbin/watchmysql ]; then
+	echo "/usr/sbin/watchmysql does not exist"
+	exit 1
+fi
+
+case "$1" in
+	start)
+		if [ `pidof -s watchmysql` ]; then
+			echo "watchmysql is already running"
+			exit 1
+		else 
+			action "Starting WatchMySQL" /usr/sbin/watchmysql
+		fi
+	;;
+	stop)
+		if [ `pidof -s watchmysql` ]; then
+			action "Stopping WatchMySQL" kill -2 `pidof watchmysql`
+		else
+			echo "watchmysql is not running"
+			exit 1
+		fi
+	;;
+	reload)
+		if [ `pidof -s watchmysql` ]; then
+			action "Sending a reload to WatchMySQL" kill -SIGUSR1 `pidof watchmysql`
+		else
+			echo "watchmysql is not running"
+			exit 1
+		fi
+	;;
+	restart)
+		if [ `pidof -s watchmysql` ]; then
+			$0 stop
+		fi
+		sleep 1
+		$0 start
+	;;
+	status)
+		if [ `pidof -s watchmysql` ]; then
+			echo "watchmysql is running on pid `pidof watchmysql`"
+		else
+			echo "watchmysql is not running"
+		fi
+	;;
+	*)
+		echo "Usage: $0 {start|stop|reload|restart|status}"
+		exit 1
+esac
+
+exit 0

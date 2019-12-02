@@ -1,0 +1,79 @@
+#!/bin/bash
+
+if [[ ! -e "/usr/bin/perl" ]]; then
+	echo "WatchMySQL required perl to be installed, please install perl first!"
+	exit 1
+fi
+
+# Install Daemon
+/bin/cp -vaf watchmysql /usr/sbin/watchmysql
+/bin/chmod -v 0700 /usr/sbin/watchmysql
+
+# Install Config
+if [[ -e "/etc/watchmysql.config" ]]; then
+	/bin/cp -vaf watchmysql.config /etc/watchmysql.config.new
+else
+	/bin/cp -vaf watchmysql.config /etc/watchmysql.config
+fi
+/bin/chmod -v 0600 /etc/watchmysql.config
+
+# Install Init Script
+if [[ -e "/etc/redhat-release" ]]; then
+	/bin/cp -vaf watchmysql.redhat /etc/init.d/watchmysql
+	/bin/chmod -v 0755 /etc/init.d/watchmysql
+	/sbin/chkconfig --add watchmysql
+	/sbin/chkconfig --level 35 watchmysql on
+fi
+
+# cPanel Server?
+if [[ -e "/usr/local/cpanel/cpanel" ]]; then
+	# Create required directories
+	test ! -d /var/cpanel/apps && mkdir -v -m 0755 /var/cpanel/apps
+	test ! -d /var/cpanel/addons && mkdir -v -m 0755 /var/cpanel/addons
+	test ! -d /var/cpanel/addons/watchmysql && mkdir -v -m 0755 /var/cpanel/addons/watchmysql
+	test ! -d /var/cpanel/addons/watchmysql/bin && mkdir -v -m 0755 /var/cpanel/addons/watchmysql/bin
+	test ! -d /usr/local/cpanel/whostmgr/docroot/cgi/addons && mkdir -v -m 0755 /usr/local/cpanel/whostmgr/docroot/cgi/addons
+	test ! -d /usr/local/cpanel/whostmgr/docroot/cgi/addons/watchmysql && mkdir -v -m 0755 /usr/local/cpanel/whostmgr/docroot/cgi/addons/watchmysql
+
+	# Install Files
+	/bin/cp -avf whmplugin/* /usr/local/cpanel/whostmgr/docroot/cgi/addons/watchmysql/
+	/bin/cp -avf uninstall /var/cpanel/addons/watchmysql/bin/
+	/bin/chmod -v 0700 /var/cpanel/addons/watchmysql/bin/uninstall
+	/bin/cp -avf upgrade /var/cpanel/addons/watchmysql/bin/
+	/bin/chmod -v 0700 /var/cpanel/addons/watchmysql/bin/upgrade
+
+	# Config Update
+	sed -i '/cpanel=/Id' /etc/watchmysql.config
+	echo 'cpanel=1' >> /etc/watchmysql.config
+
+	# chkserv.d
+	/bin/cp -vaf watchmysql.chkservd /etc/chkserv.d/watchmysql
+	sed -i '/watchmysql:/d' /etc/chkserv.d/chkservd.conf
+	echo "watchmysql:1" >> /etc/chkserv.d/chkservd.conf
+
+	# Old Plugin hook check
+	test -f /usr/local/cpanel/whostmgr/docroot/cgi/addon_watchmysql.php && rm -vf /usr/local/cpanel/whostmgr/docroot/cgi/addon_watchmysql.php
+
+	# Register with appconfig
+	if [[ $(/usr/local/cpanel/bin/is_registered_with_appconfig whostmgr watchmysql) != 1 ]]; then
+		/usr/local/cpanel/bin/register_appconfig watchmysql.appconfig
+	fi
+fi
+
+# Install required perl modules
+export PERL_MM_USE_DEFAULT=1
+/usr/bin/perl -MDBI -e '' 2>/dev/null || /usr/bin/perl -MCPAN -e 'install DBI'
+/usr/bin/perl -MDBD::mysql -e ''	2>/dev/null || /usr/bin/perl -MCPAN -e 'force install DBD::mysql'
+export -n PERL_MM_USE_DEFAULT
+
+# Restart watchmysql
+if [ "`/sbin/pidof -s watchmysql`" != "" ]; then
+	/bin/kill -HUP `/sbin/pidof watchmysql`
+	/usr/sbin/watchmysql
+fi
+
+if [ -f "/usr/local/cpanel/cpanel" ]; then
+	echo "WatchMySQL installation has completed, you may now log into the WHM to manage this service"
+else
+	echo "WatchMySQL installation has completed, you should now edit the /etc/watchmysql.config file before starting the watchmysql service"
+fi

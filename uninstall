@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#cPanel Files
+if [[ -e "/usr/local/cpanel/cpanel" ]]; then
+	rm -rf /var/cpanel/addons/watchmysql
+	rm -rf /usr/local/cpanel/whostmgr/docroot/watchmysql
+	rm -rf /usr/local/cpanel/whostmgr/docroot/cgi/addons/watchmysql
+	rm -f /usr/local/cpanel/whostmgr/docroot/cgi/addon_watchmysql.php
+	/usr/local/cpanel/bin/unregister_appconfig /var/cpanel/apps/watchmysql.conf
+fi
+
+rm -f /usr/sbin/watchmysql
+rm -f /etc/watchmysql.config
+rm -f /etc/watchmysql.userlimits
+rm -f /etc/watchmysql.packagelimits
+rm -f /etc/chkserv.d/watchmysql
+rm -f /etc/init.d/watchmysql

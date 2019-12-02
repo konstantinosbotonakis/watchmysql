@@ -1,0 +1,1 @@
+service[watchmysql]=x,x,x,/etc/init.d/watchmysql restart,watchmysql,root

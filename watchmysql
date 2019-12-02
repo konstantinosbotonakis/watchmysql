@@ -1,0 +1,361 @@
+#!/usr/bin/perl
+
+use strict;
+
+use DBI;
+use POSIX;
+use Sys::Hostname;
+
+my $VERSION = "10";
+
+showversion() if $ARGV[0] eq '-v';
+daemonize() unless $ARGV[0] eq '-f';
+
+$0 = "watchmysql";
+
+my $config = get_watchmysql_config();
+my $mycnf = get_user_mycnf();
+
+if(!exists $config->{'mysql_user'} && !exists $config->{'mysql_pass'}) {
+	unless(exists $mycnf->{'user'} && exists $mycnf->{'password'}) {
+		print STDERR "No username/password could be found to access MySQL in /etc/watchmysql.config or in ~/.my.cnf\n";
+		exit 1;
+	}
+	$config->{'mysql_user'} = $mycnf->{'user'};
+	$config->{'mysql_pass'} = $mycnf->{'password'};
+}
+
+my $dbh = DBI->connect("DBI:mysql:host=localhost", $config->{'mysql_user'}, $config->{'mysql_pass'}, {'PrintError' => 0, 'RaiseError' => 0});
+unless ($dbh) {
+	print STDERR "MySQL Server connection failed, ", $DBI::errstr, "\n";
+	exit 1;
+}
+
+my $user_limits = get_user_limits();
+my $package_limits = get_package_limits();
+my $wwwacct_conf = get_cpanel_wwwacct_conf();
+
+while(1) {
+	unless($dbh && $dbh->ping) {
+		$dbh->disconnect if $dbh;
+		print STDERR "Lost MySQL connection, attempting to reconnect...";
+		$dbh = DBI->connect("DBI:mysql:host=localhost", $config->{'mysql_user'}, $config->{'mysql_pass'}, {'PrintError' => 0, 'RaiseError' => 0});
+		if($dbh && $dbh->ping) {
+			print "Success\n";
+		} else {
+			print STDERR "Failed, retrying in 60 seconds\n";
+			if(!exists $config->{'mysql_user'} && !exists $config->{'mysql_pass'}) {
+				unless(exists $mycnf->{'user'} && exists $mycnf->{'password'}) {
+					print STDERR "No username/password could be found to access MySQL in /etc/watchmysql.config or in ~/.my.cnf\n";
+					exit 1;
+				}
+				$config->{'mysql_user'} = $mycnf->{'user'};
+				$config->{'mysql_pass'} = $mycnf->{'password'};
+			}
+			sleep 15;
+			next;
+		}
+	}
+
+	my %counter;
+	my $processlist = $dbh->prepare("SHOW PROCESSLIST");
+	$processlist->execute();
+	while(my $process = $processlist->fetchrow_hashref()) {
+		if($config->{'cpanel'}) {
+			my($cpuser,$dbuser) = split /_/, $process->{'User'}, 2;
+			$counter{$cpuser}++;
+		} else {
+			$counter{$process->{'User'}}++;
+		}
+	}
+
+	foreach my $user (keys %counter) {
+		## User Limit Check
+		if(exists $user_limits->{$user}) {
+			next if $user_limits->{$user} eq 0;
+			if($counter{$user} > $user_limits->{$user}) {
+				notify_admin($user, $user_limits->{$user}, $counter{$user}) if $config->{'notify_admin'};
+				notify_user($user, $user_limits->{$user}, $counter{$user}) if $config->{'notify_user'};
+				kill_connections($user) if $config->{'kill_connections'};
+			}
+			next;
+		}
+		## Package Limit Check, only for cpanel servers
+		if($config->{'cpanel'}) {
+			my $cpanel_user_details = get_cpanel_user_details($user);
+			if(exists $package_limits->{$cpanel_user_details->{'PLAN'}}) {
+				next if $package_limits->{$cpanel_user_details->{'PLAN'}} eq 0;
+				if($counter{$user} > $package_limits->{$cpanel_user_details->{'PLAN'}}) {
+					notify_admin($user, $user_limits->{$user}, $counter{$user}) if $config->{'notify_admin'};
+					notify_user($user, $user_limits->{$user}, $counter{$user}) if $config->{'notify_user'};
+					kill_connections($user) if $config->{'kill_connections'};
+				}
+				next;
+			}
+		}
+		## Global Limit Check
+		if(exists($config->{'connection_limit'})) {
+			next if $config->{'connection_limit'} eq 0;
+			if($counter{$user} > $config->{'connection_limit'}) {
+				notify_admin($user, $user_limits->{$user}, $counter{$user}) if $config->{'notify_admin'};
+				notify_user($user, $user_limits->{$user}, $counter{$user}) if $config->{'notify_user'};
+				kill_connections($user) if $config->{'kill_connections'};
+			}
+			next;
+		}
+	}
+	sleep $config->{'check_interval'};
+}
+
+
+sub get_watchmysql_config() {
+	unless ( -f '/etc/watchmysql.config' ) {
+		print STDERR "/etc/watchmysql.config does not exist\n";
+		exit 1;
+	}
+
+	my $result = open my $fh, '<', '/etc/watchmysql.config';
+	unless ($result) {
+		print STDERR "Failed to open /etc/watchmysql.config for reading: ", $!, "\n";
+		exit 1;
+	}
+
+	my %config;
+	while(<$fh>) {
+		tr/\n\r//d;
+		next if /^#/;
+		my ($k, $v) = split /=/, $_, 2;
+		$config{$k} = $v if $k;
+	}
+	close $fh;
+
+	return \%config;
+}
+
+
+sub get_user_mycnf() {
+	my @user = getpwuid($<);
+
+	return unless -f $user[7] . "/.my.cnf";
+	
+	my $result = open my $fh, '<', $user[7] . "/.my.cnf";
+	unless ($result) {
+		print STDERR "Failed to open ", $user[7], "/.my.cnf for reading: ", $!, "\n";
+		return;
+	}
+
+	my %mycnf;
+	while(<$fh>) {
+		tr/\n\r//d;
+		next if /^#/;
+		next unless /=/;
+		my ($k, $v) = split /=/, $_, 2;
+		$v =~ s/^"//; # remove leading double quote
+		$v =~ s/"$//; # remove trailing double quote
+		$mycnf{$k} = $v;
+	}
+	close $fh;	
+
+	$mycnf{'password'} = $mycnf{'pass'} if (exists $mycnf{'pass'} && !exists($mycnf{'password'}));
+
+	return \%mycnf;
+}
+
+sub get_user_limits() {
+	my %user_limits;
+	return \%user_limits unless -f '/etc/watchmysql.userlimits';
+
+	my $result = open my $fh, '<', '/etc/watchmysql.userlimits';
+	unless ($result) {
+		print STDERR "Failed to open /etc/watchmysql.userlimits for reading: ", $!, "\n";
+		return;
+	}
+
+	while(<$fh>) {
+		tr/\n\r//d;
+		next if /^#/;
+		next unless /=/;
+		my ($k, $v) = split /=/, $_, 2;
+		$user_limits{$k} = $v;
+	}
+	close $fh;
+
+	return \%user_limits;
+}
+
+sub get_package_limits() {
+	my %package_limits;
+	return \%package_limits unless -f '/etc/watchmysql.packagelimits' && -f '/usr/local/cpanel/cpanel';
+
+	my $result = open my $fh, '<', '/etc/watchmysql.packagelimits';
+	unless ($result) {
+		print STDERR "Failed to open /etc/watchmysql.packagelimits for reading: ", $!, "\n";
+		exit 1;
+	}
+
+	while(<$fh>) {
+		tr/\n\r//d;
+		next if /^#/;
+		next unless /=/;
+		my ($k, $v) = split /=/, $_, 2;
+		$package_limits{$k} = $v;
+	}
+	close $fh;
+
+	return \%package_limits;
+}
+
+
+sub get_cpanel_wwwacct_conf() {
+	my %contents;
+	
+	return \%contents unless -f '/etc/wwwacct.conf';
+	
+	my $result = open my $fh, '<', '/etc/wwwacct.conf';
+	unless ($result) {
+		print STDERR "Failed to open /etc/wwwacct.conf for reading: ", $!, "\n";
+		return \%contents;
+	}
+
+	while(<$fh>) {
+		tr/\n\r//d;
+		next if /^#/;
+		my($k, $v) = split /\s+/, $_, 2;
+		$contents{$k} = $v;
+	}
+	close $fh;
+	
+	return \%contents;
+}
+
+
+sub notify_admin() {
+	my($user, $limit, $connections) = @_;
+
+	my $admin_email = "root@" . hostname();
+	$admin_email = $wwwacct_conf->{'CONTACTEMAIL'} if $config->{'cpanel'} && exists $wwwacct_conf->{'CONTACTEMAIL'};
+
+	return unless -f '/usr/sbin/sendmail';
+
+	my $result = open my $sm, '|/usr/sbin/sendmail -t';
+	unless($result) {
+		print STDERR "Failed to exec /usr/sbin/sendmail : ", $!, "\n";
+		return;
+	}
+	
+	print $sm "To: <", $admin_email, ">\n";
+	print $sm "Subject: [ WatchMySQL Alert ] ", $user, " has exceeded their MySQL connection limit!\n\n";
+	print $sm "This message is to alert you that the username ", $user, " has exceeded their MySQL connection limit. Please view the details below.\n\n";
+	print $sm "Server: ", hostname(), "\n";
+	print $sm "User: ", $user, "\n";
+	print $sm "MySQL Connection Limit: ", $limit, "\n";
+	print $sm "Current MySQL Connections: ", $connections, "\n";
+	close $sm;
+}
+
+
+sub notify_user() {
+	my($user, $limit, $connections) = @_;
+
+	return unless $config->{'cpanel'};
+
+	my $user_details = get_cpanel_user_details($user);
+	return unless $user_details->{'CONTACTEMAIL'};
+
+	return unless -f '/usr/sbin/sendmail';
+
+	my $result = open my $sm, '|/usr/sbin/sendmail -t';
+	unless($result) {
+		print STDERR "Failed to exec /usr/sbin/sendmail : ", $!, "\n";
+		return;
+	}
+
+	print $sm "To: <", $user_details->{'CONTACTEMAIL'}, ">\n";
+	print $sm "Subject: [ WatchMySQL Alert ] ", "You have exceeded your MySQL concurrent connection limit!\n\n";
+	print $sm "This message is to alert you that you have exceeded your concurrent MySQL connection limit.  Please review the details below\n\n";
+	print $sm "User: ", $user, "\n";
+	print $sm "Domain: ", $user_details->{'DNS'}, "\n";
+	print $sm "MySQL Connection Limit: ", $limit, "\n";
+	print $sm "Current MySQL Connections: ", $connections, "\n";
+	close $sm;
+}
+
+
+sub get_cpanel_user_details() {
+	my($user) = @_;
+
+	my %user_details;
+	return \%user_details unless -f '/var/cpanel/users/' . $user;
+
+	my $result = open my $fh, '<', '/var/cpanel/users/' . $user;
+	unless ($result) {
+		print STDERR "Failed to open /var/cpanel/users/", $user, " for reading: ", $!, "\n";
+		return \%user_details;
+	}
+
+	while(<$fh>) {
+		tr/\n\r//d;
+		next if /^#/;
+		next unless /=/;
+		my ($k, $v) = split /=/, $_, 2;
+		$user_details{$k} = $v;
+	}
+	close $fh;
+
+	return \%user_details;
+}
+
+sub kill_connections() {
+	my($user) = @_;
+
+	my $processlist = $dbh->prepare("SHOW PROCESSLIST");
+	$processlist->execute();
+	while(my $row = $processlist->fetchrow_hashref()) {
+		$dbh->do("kill " . $row->{'Id'}) if $row->{'User'} =~ /^$user\_/ && $config->{'cpanel'};
+		$dbh->do("kill " . $row->{'Id'}) if $row->{'User'} =~ /^$user$/;
+	}
+
+	return 1;
+}
+
+sub daemonize {
+	chdir '/' or die "Can't Change Directory to /: $!";
+
+	my $pid = fork;
+	defined $pid or die "Could not deamonize: $!";
+	exit if $pid;
+
+	POSIX::setsid();
+
+	open my $logfile, '>>', '/var/log/watchmysql.log';
+	open STDOUT, '>&', \*$logfile;
+	open STDERR, '>&', \*$logfile;
+	
+	for(my $i=3;$i<1024;$i++) {
+		POSIX::close($i);
+	}
+	
+	$SIG{__WARN__} = sub { 
+		print join(" ", @_);
+	};
+
+	$SIG{__DIE__} = $SIG{HUP} = sub {
+		print join(" ", @_);
+		exit;
+	};
+	
+	$SIG{USR1} = sub {
+		print "Received SIGHUP, reloading config files.\n";
+		$config = get_watchmysql_config();
+		$mycnf = get_user_mycnf();
+		$user_limits = get_user_limits();
+		$package_limits = get_package_limits();
+		$wwwacct_conf = get_cpanel_wwwacct_conf();
+	};
+}
+
+sub showversion {
+	print "WatchMySQL version: ", $VERSION, "\n";
+	exit 0;
+}
+

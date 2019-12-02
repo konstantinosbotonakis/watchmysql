@@ -1,0 +1,13 @@
+name=watchmysql
+
+service=whostmgr
+
+url=/cgi/addons/watchmysql/
+
+user=root
+
+acls=all
+
+displayname=WatchMySQL
+
+entryurl=addons/watchmysql/index.php

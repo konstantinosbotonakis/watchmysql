@@ -1,0 +1,22 @@
+#!/bin/bash
+
+curlversion=$(curl --version | head)
+currentversion=$(/usr/sbin/watchmysql -v|cut -d" " -f3)
+latestversion=$(curl http://download.ndchost.com/watchmysql/latest-version)
+
+if [ $latestversion -le $currentversion ]; then
+	exit
+fi
+
+cd /usr/src
+rm -f latest-watchmysql
+curl --user-agent "$curlversion watchmysql/$currentversion" -o latest-watchmysql http://download.ndchost.com/watchmysql/latest-watchmysql
+if [ $? -ne 0 ]; then
+	echo "Download Failed, Aborting"
+	exit 1
+fi
+sh latest-watchmysql
+rm -f latest-watchmysql
+
+echo "Upgrade Complete!"
+exit 0

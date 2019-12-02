@@ -1,0 +1,4 @@
+#!/bin/bash
+
+/bin/rm -vf latest-watchmysql
+makeself --target installd-watchmysql --tar-extra "--exclude=.git" ./ latest-watchmysql "WatchMySQL by NDCHost.com" ./install
