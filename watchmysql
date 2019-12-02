@@ -6,7 +6,7 @@ use DBI;
 use POSIX;
 use Sys::Hostname;
 
-my $VERSION = "10";
+my $VERSION = "10.1";
 
 showversion() if $ARGV[0] eq '-v';
 daemonize() unless $ARGV[0] eq '-f';
