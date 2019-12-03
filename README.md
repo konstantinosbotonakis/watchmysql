@@ -7,15 +7,15 @@ watchmysql for PHP 7.x - cPanel Plugin (based on https://www.ndchost.com/cpanel-
 ----
 ### How to install
 
-* `mdkir /usr/src/watchmysql`
+* `mkdir /usr/src/watchmysql`
 
 * `cd /usr/src/watchmysql`
 
 * `git clone https://github.com/konstantinosbotonakis/watchmysql.git`
 
-* `sh ./install`
+* `sh ./watchmysql/install`
 
 ----
 ### Change Log
-- 10.1
+- 10.1 - 
 Added PHP 7.x support and MySQLi
