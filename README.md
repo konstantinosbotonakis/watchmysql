@@ -1,3 +1,12 @@
+### Update:
+
+NDCHost released updated version 11.0 on 13th January 2020 which you can install easy.
+
+`cd /usr/src
+wget http://download.ndchost.com/watchmysql/latest-watchmysql
+sh latest-watchmysql`
+----
+----
 watchmysql for PHP 7.x - cPanel Plugin (based on https://www.ndchost.com/cpanel-whm/addons/watchmysql/)
 
 ### Important information
