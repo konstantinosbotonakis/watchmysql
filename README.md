@@ -110,13 +110,6 @@ whmplugin/           # PHP WHM admin UI
   dev/                  # Mock data for local development
 ```
 
-## CI/CD
-
-A GitHub Actions workflow (`.github/workflows/release.yml`) automatically:
-1. Bumps the version on every merge to `master`
-2. Creates a tagged GitHub Release with release notes
-3. Attaches a distributable `watchmysql-vX.Y.tar.gz` archive
-
 ## History
 
 This project originated as a fork of the WatchMySQL plugin by [NDCHost](https://www.ndchost.com/), which was last actively maintained around 2014-2020. The original plugin stopped receiving updates, so this fork was created initially to fix PHP 7.x compatibility. It has since been rewritten with a modern UI (Bootstrap 5), PHP 8.x support, local development mode, and many new monitoring features.

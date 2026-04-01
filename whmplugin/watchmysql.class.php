@@ -98,7 +98,7 @@ class watchmysql {
 
     public function get_version() {
         if ($this->daemon_binary === null) {
-            return '11.0-dev';
+            return '2016.1.0.0-dev';
         }
         if (!is_file($this->daemon_binary)) {
             $this->set_error($this->daemon_binary . ' is missing, unable to determine version');
