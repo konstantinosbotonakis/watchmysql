@@ -2,6 +2,8 @@
 
 A cPanel/WHM plugin that monitors MySQL concurrent connections per user and enforces configurable limits. When a user exceeds their limit, WatchMySQL can automatically kill their connections and send email alerts.
 
+![WatchMySQL Dashboard](screenshot.png)
+
 ## Features
 
 - **Real-time Dashboard** -- daemon status, connection metrics, per-user summary with color-coded status
