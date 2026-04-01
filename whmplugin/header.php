@@ -37,6 +37,11 @@ if (defined('WATCHMYSQL_DEV') && WATCHMYSQL_DEV) {
 <body class="<?php echo $is_whm ? 'whm-mode' : 'standalone-mode'; ?>">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark <?php echo $is_whm ? 'mb-3' : 'fixed-top'; ?>">
         <div class="<?php echo $is_whm ? 'container-fluid' : 'container'; ?>">
+<?php if ($is_whm) { ?>
+            <a class="btn btn-outline-light btn-sm me-2" href="<?php echo $_ENV['cp_security_token'] ?? ''; ?>/" title="Back to WHM">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+<?php } ?>
             <a class="navbar-brand" href="<?php echo $baseurl; ?>/index.php">
                 <i class="bi bi-database-fill-gear"></i> WatchMySQL
             </a>
