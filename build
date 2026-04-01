@@ -1,4 +1,19 @@
 #!/bin/bash
 
-/bin/rm -vf latest-watchmysql
-makeself --target installd-watchmysql --tar-extra "--exclude=.git" ./ latest-watchmysql "WatchMySQL by NDCHost.com" ./install
+# Build a release archive for WatchMySQL
+VERSION=$(grep -oP 'my \$VERSION = "\K[^"]+' watchmysql)
+ARCHIVE="watchmysql-v${VERSION}.tar.gz"
+
+echo "Building WatchMySQL v${VERSION}..."
+
+tar czf "$ARCHIVE" \
+    --exclude='.git' \
+    --exclude='.github' \
+    --exclude='.claude' \
+    --exclude='dist' \
+    --exclude='whmplugin/DEV_MODE' \
+    --exclude='whmplugin/dev/.my.cnf' \
+    --exclude='default.profraw' \
+    .
+
+echo "Created: ${ARCHIVE}"

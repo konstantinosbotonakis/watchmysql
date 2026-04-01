@@ -1,0 +1,4 @@
+DNS=alice.example.com
+PLAN=default
+CONTACTEMAIL=alice@example.com
+OWNER=root

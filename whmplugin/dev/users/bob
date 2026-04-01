@@ -1,0 +1,4 @@
+DNS=bob.example.com
+PLAN=default
+CONTACTEMAIL=bob@example.com
+OWNER=root

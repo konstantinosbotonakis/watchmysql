@@ -1,7 +1,7 @@
-		</div>
-		<div class="navbar navbar-default navbar-fixed-bottom">
-			<p class="navbar-text text-center" style="float:none;">Written by <a href="http://www.ndchost.com/" title="Network Data Center Host, Inc." class="navbar-link">NDCHost.com</a></p>
-		</div>
-	</body>
+    </div>
+    <footer class="text-center text-muted py-3 border-top mt-4">
+        <small>WatchMySQL &mdash; Open Source &mdash; <a href="https://github.com/konstantinosbotonakis/watchmysql" class="text-muted">GitHub</a></small>
+    </footer>
+    <script src="<?php echo $baseurl; ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
 </html>
-
