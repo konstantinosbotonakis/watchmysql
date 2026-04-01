@@ -33,6 +33,7 @@ unless ($dbh) {
 
 my $user_limits = get_user_limits();
 my $package_limits = get_package_limits();
+my $whitelist = get_whitelist();
 my $wwwacct_conf = get_cpanel_wwwacct_conf();
 
 while(1) {
@@ -70,6 +71,9 @@ while(1) {
 	}
 
 	foreach my $user (keys %counter) {
+		## Whitelist Check - skip whitelisted users
+		next if exists $whitelist->{$user};
+
 		## User Limit Check
 		if(exists $user_limits->{$user}) {
 			next if $user_limits->{$user} eq 0;
@@ -203,6 +207,30 @@ sub get_package_limits() {
 	close $fh;
 
 	return \%package_limits;
+}
+
+
+sub get_whitelist() {
+	my %whitelist;
+	return \%whitelist unless -f '/etc/watchmysql.whitelist';
+
+	my $result = open my $fh, '<', '/etc/watchmysql.whitelist';
+	unless ($result) {
+		print STDERR "Failed to open /etc/watchmysql.whitelist for reading: ", $!, "\n";
+		return \%whitelist;
+	}
+
+	while(<$fh>) {
+		tr/\n\r//d;
+		next if /^#/;
+		next unless /\S/;
+		s/^\s+//;
+		s/\s+$//;
+		$whitelist{$_} = 1;
+	}
+	close $fh;
+
+	return \%whitelist;
 }
 
 
@@ -345,11 +373,12 @@ sub daemonize {
 	};
 	
 	$SIG{USR1} = sub {
-		print "Received SIGHUP, reloading config files.\n";
+		print "Received SIGUSR1, reloading config files.\n";
 		$config = get_watchmysql_config();
 		$mycnf = get_user_mycnf();
 		$user_limits = get_user_limits();
 		$package_limits = get_package_limits();
+		$whitelist = get_whitelist();
 		$wwwacct_conf = get_cpanel_wwwacct_conf();
 	};
 }

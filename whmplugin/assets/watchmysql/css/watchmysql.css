@@ -1,4 +1,16 @@
 body {
-   padding-top: 70px;
-   padding-bottom: 70px;
+    padding-top: 70px;
+    padding-bottom: 30px;
+}
+code {
+    font-size: 0.9em;
+}
+.table th a {
+    color: inherit;
+}
+.table th a:hover {
+    color: var(--bs-primary);
+}
+.card + .card {
+    margin-top: 1rem;
 }

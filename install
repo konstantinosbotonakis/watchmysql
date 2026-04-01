@@ -37,6 +37,9 @@ if [[ -e "/usr/local/cpanel/cpanel" ]]; then
 
 	# Install Files
 	/bin/cp -avf whmplugin/* /usr/local/cpanel/whostmgr/docroot/cgi/addons/watchmysql/
+	# Remove dev mode files from production install
+	rm -rf /usr/local/cpanel/whostmgr/docroot/cgi/addons/watchmysql/dev
+	rm -f /usr/local/cpanel/whostmgr/docroot/cgi/addons/watchmysql/DEV_MODE
 	/bin/cp -avf uninstall /var/cpanel/addons/watchmysql/bin/
 	/bin/chmod -v 0700 /var/cpanel/addons/watchmysql/bin/uninstall
 	/bin/cp -avf upgrade /var/cpanel/addons/watchmysql/bin/
