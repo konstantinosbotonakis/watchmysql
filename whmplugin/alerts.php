@@ -1,71 +1,49 @@
-<?php if($watchmysql->license_nag()) { ?>
-<div class="alert alert-warning">
-	<div class="media">
-		<div class="pull-left" style="font-size:34px;padding:0px 10px;">
-			<span class="glyphicon glyphicon-paperclip"></span>
-		</div>
-		<div class="media-body">
-			<h4 class="media-heading">cPanel/WHM License Nag</h4>
-			We noticed that your cPanel/WHM license was not purchased through <a href="http://www.ndchost.com/" target="_new" class="alert-link">NDCHost</a>.  Although this plugin will continue to work properly we would like to ask for your support by using <a href="http://www.ndchost.com/" target="_new" class="alert-link">NDCHost</a> for your cPanel licensing needs.  We will price and bill date match your existing license provider.  There will also be no downtime during the transfer process.  If you are interesting in supporting the company that brought you this plugin please visit <a href="http://www.ndchost.com/" target="_new" class="alert-link">www.NDCHost.com</a>.  Thanks!
-		</div>
-	</div>
+<?php if ($watchmysql->license_nag()) { ?>
+<div class="alert alert-warning d-flex align-items-start gap-3">
+    <i class="bi bi-info-circle-fill fs-4"></i>
+    <div>
+        <strong>cPanel/WHM License Nag</strong><br>
+        Your cPanel/WHM license was not purchased through <a href="https://www.ndchost.com/" target="_blank" class="alert-link">NDCHost</a>. Consider supporting the original developer at <a href="https://www.ndchost.com/" target="_blank" class="alert-link">www.NDCHost.com</a>.
+    </div>
 </div>
 <?php } ?>
 
-
-<?php if(!$watchmysql->is_latest() && !isset($no_upgrade_check)) { ?>
-<div class="alert alert-info">
-	<div class="media">
-		<div class="pull-left" style="font-size:34px;padding:0px 10px;">
-			<span class="glyphicon glyphicon-refresh"></span>
-		</div>
-		<div class="media-body">
-			<h4 class="media-heading">New Version Available!</h4>
-			There is a new version of this software available.  If you have automatic updates enabled this software should upgrade itself at night.  You can manually upgrade the software by clicking <a href="<?php echo $baseurl; ?>/upgrade.php" class="alert-link" title="Upgrade WatchMySQL Software">here</a>
-		</div>
-	</div>
+<?php if (!$watchmysql->is_latest() && !isset($no_upgrade_check)) { ?>
+<div class="alert alert-info d-flex align-items-start gap-3">
+    <i class="bi bi-arrow-repeat fs-4"></i>
+    <div>
+        <strong>New Version Available</strong><br>
+        A new version is available. <a href="<?php echo $baseurl; ?>/upgrade.php" class="alert-link">Upgrade now</a> or wait for the automatic nightly update.
+    </div>
 </div>
 <?php } ?>
 
-
-<?php if(!$watchmysql->get_watchmysql_pid()) { ?>
-<div class="alert alert-warning">
-	<div class="media">
-		<div class="pull-left" style="font-size:34px;padding:0px 10px;">
-			<span class="glyphicon glyphicon-thumbs-down"></span>
-		</div>
-		<div class="media-body">
-			<h4 class="media-heading">WatchMySQL Daemon not running!</h4>
-			The WatchMySQL daemon is not running!  With out this process your limits will not be enforced.  If you wish to attempt to start this daemon now <a href="<?php echo $baseurl;?>/startdaemon.php" class="alert-link" title="Start WatchMySQL back end">click here</a>
-		</div>
-	</div>
+<?php if (!$watchmysql->get_watchmysql_pid()) { ?>
+<div class="alert alert-warning d-flex align-items-start gap-3">
+    <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+    <div>
+        <strong>Daemon Not Running</strong><br>
+        The WatchMySQL daemon is not running. Limits will not be enforced. <a href="<?php echo $baseurl; ?>/startdaemon.php" class="alert-link">Start daemon</a>
+    </div>
 </div>
 <?php } ?>
 
-<?php if(isset($error)) { ?>
-<div class="alert alert-danger">
-	<div class="media">
-		<div class="pull-left" style="font-size:34px;padding:0px 10px;">
-			<span class="glyphicon glyphicon-thumbs-down"></span>
-		</div>
-		<div class="media-body">
-			<h4 class="media-heading">Error!</h4>
-			<?php echo $error; ?>
-		</div>
-	</div>
+<?php if (isset($error)) { ?>
+<div class="alert alert-danger d-flex align-items-start gap-3">
+    <i class="bi bi-x-circle-fill fs-4"></i>
+    <div>
+        <strong>Error</strong><br>
+        <?php echo htmlspecialchars($error); ?>
+    </div>
 </div>
 <?php } ?>
 
-<?php if(isset($success)) { ?>
-<div class="alert alert-success">
-	<div class="media">
-		<div class="pull-left" style="font-size:34px;padding:0px 10px;">
-			<span class="glyphicon glyphicon-thumbs-up"></span>
-		</div>
-		<div class="media-body">
-			<h4 class="media-heading">Success!</h4>
-			<?php echo $success; ?>
-		</div>
-	</div>
+<?php if (isset($success)) { ?>
+<div class="alert alert-success d-flex align-items-start gap-3">
+    <i class="bi bi-check-circle-fill fs-4"></i>
+    <div>
+        <strong>Success</strong><br>
+        <?php echo htmlspecialchars($success); ?>
+    </div>
 </div>
 <?php } ?>

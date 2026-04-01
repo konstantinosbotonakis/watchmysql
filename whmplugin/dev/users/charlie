@@ -1,0 +1,4 @@
+DNS=charlie.example.com
+PLAN=reseller
+CONTACTEMAIL=charlie@example.com
+OWNER=root

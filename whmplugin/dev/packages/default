@@ -1,0 +1,9 @@
+MAXFTP=unlimited
+MAXSQL=unlimited
+MAXPOP=unlimited
+MAXLST=unlimited
+MAXSUB=unlimited
+MAXPARK=unlimited
+MAXADDON=unlimited
+BWLIMIT=unlimited
+QUOTA=unlimited
