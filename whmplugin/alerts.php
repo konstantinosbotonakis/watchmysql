@@ -1,13 +1,3 @@
-<?php if ($watchmysql->license_nag()) { ?>
-<div class="alert alert-warning d-flex align-items-start gap-3">
-    <i class="bi bi-info-circle-fill fs-4"></i>
-    <div>
-        <strong>cPanel/WHM License Nag</strong><br>
-        Your cPanel/WHM license was not purchased through <a href="https://www.ndchost.com/" target="_blank" class="alert-link">NDCHost</a>. Consider supporting the original developer at <a href="https://www.ndchost.com/" target="_blank" class="alert-link">www.NDCHost.com</a>.
-    </div>
-</div>
-<?php } ?>
-
 <?php if (!$watchmysql->is_latest() && !isset($no_upgrade_check)) { ?>
 <div class="alert alert-info d-flex align-items-start gap-3">
     <i class="bi bi-arrow-repeat fs-4"></i>

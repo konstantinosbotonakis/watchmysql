@@ -1,7 +1,15 @@
-body {
+/* Standalone dev mode: fixed navbar needs body padding */
+body.standalone-mode {
     padding-top: 70px;
     padding-bottom: 30px;
 }
+
+/* WHM mode: no fixed navbar, content flows naturally in the iframe */
+body.whm-mode {
+    padding-top: 0;
+    padding-bottom: 10px;
+}
+
 code {
     font-size: 0.9em;
 }

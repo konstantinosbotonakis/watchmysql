@@ -977,31 +977,6 @@ class watchmysql {
     }
 
 
-    public function license_nag() {
-        if (defined('WATCHMYSQL_DEV') && WATCHMYSQL_DEV) {
-            return false;
-        }
-
-        $serverIp = @file_get_contents("https://licsrv.ndchost.com/ip.php");
-        if ($serverIp === false) return false;
-
-        $result = @file_get_contents("https://verify.cpanel.net/verifyFeed.cgi?ip=" . $serverIp);
-        if ($result === false) return false;
-
-        try {
-            $licenseXML = new SimpleXMLElement($result);
-            $attrs = $licenseXML->license->attributes();
-            if ((string)$attrs['group'] !== 'NDCHost') {
-                if (preg_match('/external/i', (string)$attrs['package'])) {
-                    return true;
-                }
-            }
-        } catch (\Exception $e) {
-            return false;
-        }
-
-        return false;
-    }
 
 
     public function format_uptime($seconds) {

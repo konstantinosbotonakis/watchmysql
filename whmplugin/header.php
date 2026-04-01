@@ -4,6 +4,7 @@ include_once(__DIR__ . '/watchmysql.class.php');
 
 if (defined('WATCHMYSQL_DEV') && WATCHMYSQL_DEV) {
     $baseurl = '';
+    $is_whm = false;
     $watchmysql = new watchmysql([
         'mycnf_file'      => __DIR__ . '/dev/.my.cnf',
         'config_file'     => __DIR__ . '/dev/watchmysql.config',
@@ -19,6 +20,7 @@ if (defined('WATCHMYSQL_DEV') && WATCHMYSQL_DEV) {
     ]);
 } else {
     $baseurl = ($_ENV['cp_security_token'] ?? '') . '/cgi/addons/watchmysql';
+    $is_whm = true;
     $watchmysql = new watchmysql();
 }
 ?>
@@ -32,9 +34,9 @@ if (defined('WATCHMYSQL_DEV') && WATCHMYSQL_DEV) {
     <link href="<?php echo $baseurl; ?>/assets/bootstrap/css/bootstrap-icons.min.css" rel="stylesheet">
     <link href="<?php echo $baseurl; ?>/assets/watchmysql/css/watchmysql.css" rel="stylesheet">
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container">
+<body class="<?php echo $is_whm ? 'whm-mode' : 'standalone-mode'; ?>">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark <?php echo $is_whm ? 'mb-3' : 'fixed-top'; ?>">
+        <div class="<?php echo $is_whm ? 'container-fluid' : 'container'; ?>">
             <a class="navbar-brand" href="<?php echo $baseurl; ?>/index.php">
                 <i class="bi bi-database-fill-gear"></i> WatchMySQL
             </a>
@@ -74,4 +76,4 @@ if (defined('WATCHMYSQL_DEV') && WATCHMYSQL_DEV) {
             </div>
         </div>
     </nav>
-    <div class="container">
+    <div class="<?php echo $is_whm ? 'container-fluid' : 'container'; ?>">
