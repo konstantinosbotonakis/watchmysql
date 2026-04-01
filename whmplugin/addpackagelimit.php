@@ -1,54 +1,47 @@
-<?PHP 
-$nav='packagelimits';
+<?php
+$nav = 'packagelimits';
 include_once('header.php');
 
-// cPanel Package List
 $packages = $watchmysql->get_package_list();
-
-// WatchMySQL global config
 $global_config = $watchmysql->get_global_config();
 
-if(isset($_POST['action']) && $_POST['action'] == 'save') {
-	$result = $watchmysql->add_package_limit($_POST['package'],$_POST['limit']);
-	if($result === true) {
-		$success = 'Successfully added package ' . $_POST['package'] . ' with a limit of ' . $_POST['limit'];
-	} else {
-		$error = 'Error adding package ' . $_POST['package'] . ' with a limit of ' . $_POST['limit'];
-	}
+if (isset($_POST['action']) && $_POST['action'] == 'save') {
+    $result = $watchmysql->add_package_limit($_POST['package'], $_POST['limit']);
+    if ($result === true) {
+        $success = 'Added limit for package ' . htmlspecialchars($_POST['package']) . ': ' . intval($_POST['limit']);
+    } else {
+        $error = $watchmysql->get_errors_string() ?: 'Failed to add package limit';
+    }
 }
 ?>
+        <h4 class="mb-3 mt-2">Add Package Limit</h4>
+        <p class="text-muted">Users on this package will be bound by this limit instead of the global limit.</p>
+        <?php include('alerts.php'); ?>
 
-			<div class="page-header">
-				<h1>Package Limits <small>Add new package limit</small>
-			</div>
-			<p>Adding a package limit for a user will override the existing global limits that are set.  This means users that use this package will be bound by the limits that you set here!</p>
-			
-			<?php include('alerts.php') ?>
-
-			<form action="<?php echo $baseurl; ?>/addpackagelimit.php" method="post" class="well well-sm form-horizontal">
-				<input type="hidden" name="action" value="save">
-				<div class="row">
-					<div class="col-md-5">
-						<label class="control-label col-md-5" id="user">Package</label>
-						<div class="col-md-7">
-							<select name="package" class="form-control">
-								<option value="">Select Package</option>
-								<?php foreach($packages as $package => $details) { ?>
-								<option value="<?php echo $package;?>"><?php echo $package;?></option>
-								<?php } ?>
-							</select>
-						</div>
-					</div>
-					<div class="col-md-5">
-						<label class="control-label col-md-5" id="limit">Connection Limit</label>
-						<div class="col-md-7">
-							<input type="text" name="limit" value="<?php echo $global_config['connection_limit'];?>" class="form-control">
-						</div>
-					</div>
-					<div class="col-md-2">
-						<button type="submit" class="btn btn-primary">Save Limit</button>
-					</div>
-				</div>
-			</form>
+        <div class="card">
+            <div class="card-body">
+                <form action="<?php echo $baseurl; ?>/addpackagelimit.php" method="post">
+                    <input type="hidden" name="action" value="save">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold">Package</label>
+                            <select name="package" class="form-select" required>
+                                <option value="">Select Package</option>
+                                <?php foreach ($packages as $package => $details) { ?>
+                                <option value="<?php echo htmlspecialchars($package); ?>"><?php echo htmlspecialchars($package); ?></option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Connection Limit</label>
+                            <input type="number" name="limit" value="<?php echo intval($global_config['connection_limit'] ?? 10); ?>" class="form-control" min="0" required>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg"></i> Save Limit</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
 
 <?php include_once('footer.php'); ?>
