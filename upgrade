@@ -1,22 +1,78 @@
 #!/bin/bash
 
-curlversion=$(curl --version | head)
-currentversion=$(/usr/sbin/watchmysql -v|cut -d" " -f3)
-latestversion=$(curl http://download.ndchost.com/watchmysql/latest-version)
+REPO="konstantinosbotonakis/watchmysql"
+GITHUB_API="https://api.github.com/repos/${REPO}/releases/latest"
 
-if [ $latestversion -le $currentversion ]; then
-	exit
-fi
+currentversion=$(/usr/sbin/watchmysql -v | grep -oP '[\d.]+$')
+echo "Current version: ${currentversion}"
 
-cd /usr/src
-rm -f latest-watchmysql
-curl --user-agent "$curlversion watchmysql/$currentversion" -o latest-watchmysql http://download.ndchost.com/watchmysql/latest-watchmysql
+# Get latest release info from GitHub
+echo "Checking for updates..."
+release_info=$(curl -sf "${GITHUB_API}")
 if [ $? -ne 0 ]; then
-	echo "Download Failed, Aborting"
-	exit 1
+    echo "Failed to check for updates from GitHub"
+    exit 1
 fi
-sh latest-watchmysql
-rm -f latest-watchmysql
 
-echo "Upgrade Complete!"
+latestversion=$(echo "$release_info" | grep -oP '"tag_name":\s*"v\K[^"]+')
+if [ -z "$latestversion" ]; then
+    echo "Failed to parse latest version"
+    exit 1
+fi
+
+echo "Latest version: ${latestversion}"
+
+# Compare versions using sort -V
+if [ "$(printf '%s\n' "$latestversion" "$currentversion" | sort -V | head -n1)" = "$latestversion" ]; then
+    echo "Already running the latest version (${currentversion})"
+    exit 0
+fi
+
+# Get the download URL for the tarball asset
+download_url=$(echo "$release_info" | grep -oP '"browser_download_url":\s*"\K[^"]+\.tar\.gz')
+if [ -z "$download_url" ]; then
+    # Fall back to the source tarball
+    download_url=$(echo "$release_info" | grep -oP '"tarball_url":\s*"\K[^"]+')
+fi
+
+if [ -z "$download_url" ]; then
+    echo "Failed to find download URL"
+    exit 1
+fi
+
+echo "Downloading v${latestversion}..."
+cd /usr/src
+rm -rf watchmysql-upgrade
+mkdir -p watchmysql-upgrade
+cd watchmysql-upgrade
+
+curl -sL "$download_url" -o watchmysql.tar.gz
+if [ $? -ne 0 ]; then
+    echo "Download failed, aborting"
+    cd /usr/src && rm -rf watchmysql-upgrade
+    exit 1
+fi
+
+echo "Extracting..."
+tar xzf watchmysql.tar.gz --strip-components=1 2>/dev/null || tar xzf watchmysql.tar.gz
+
+if [ ! -f install ]; then
+    # If extracted into a subdirectory, find it
+    subdir=$(find . -maxdepth 1 -type d -not -name '.' | head -1)
+    if [ -n "$subdir" ] && [ -f "${subdir}/install" ]; then
+        cd "$subdir"
+    else
+        echo "Install script not found in archive, aborting"
+        cd /usr/src && rm -rf watchmysql-upgrade
+        exit 1
+    fi
+fi
+
+echo "Installing v${latestversion}..."
+bash install
+
+echo "Cleaning up..."
+cd /usr/src && rm -rf watchmysql-upgrade
+
+echo "Upgrade to v${latestversion} complete!"
 exit 0

@@ -120,10 +120,21 @@ class watchmysql {
             return true;
         }
 
-        $latest_version = @file_get_contents('https://download.ndchost.com/watchmysql/version.php');
-        if ($latest_version === false) {
+        $ctx = stream_context_create(['http' => [
+            'header' => "User-Agent: WatchMySQL\r\n",
+            'timeout' => 5
+        ]]);
+        $json = @file_get_contents('https://api.github.com/repos/konstantinosbotonakis/watchmysql/releases/latest', false, $ctx);
+        if ($json === false) {
             return true; // Can't check, assume up to date
         }
+
+        $release = @json_decode($json, true);
+        if (!$release || !isset($release['tag_name'])) {
+            return true;
+        }
+
+        $latest_version = ltrim($release['tag_name'], 'v');
         $current_version = $this->get_version();
         if ($current_version === false) return false;
 
